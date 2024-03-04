@@ -1,0 +1,29 @@
+version: '3.3'
+
+networks:
+  sds_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.112.0/24
+          gateway: 192.168.112.1
+
+services:
+  sds_chall:
+    build: sds_software
+    ports:
+      - 5000:5000
+    privileged: true
+    tty: true
+    networks:
+      - sds_net
+  sds_ecm:
+    build: sds_ecm
+    privileged: true
+    tty: true
+    networks:
+      - sds_net
+    ports:
+      - 5001:5000
+

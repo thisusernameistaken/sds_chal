@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from pwn import *
 import binascii
 
@@ -39,7 +40,7 @@ class SDSSoftware:
         if ecu_id.lower() == self.ecm_id:
             self.ecm_proc.send(unhex_data)
             while True:
-                can_resp = self.ecm_proc.readn(8,timeout=0.1)
+                can_resp = self.ecm_proc.readn(8,timeout=1)
                 if can_resp==b"":
                     break
                 byte_string = self.to_byte_string(can_resp)
@@ -122,8 +123,9 @@ class SDSSoftware:
         self.candump_log=old_log
 
     def main_loop(self):
-        print("SimpleDiagnostService Software v1.0")
-        self.ecm_proc = process("./run.sh",shell=True)
+        print("SimpleDiagnosticService Software v1.0")
+        context.log_level="debug"
+        self.ecm_proc = remote("127.0.0.1",5001)
         self.ecm_proc.readuntil(b"Starting ECU")
         self.ecm_proc.readline()
         while True:
