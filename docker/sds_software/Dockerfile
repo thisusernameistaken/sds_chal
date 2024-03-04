@@ -9,3 +9,4 @@ COPY hook.sh /jail/
 ENV JAIL_MEM 4G
 ENV JAIL_TIME 400
 ENV JAIL_DEV null,zero,urandom
+ENV JAIL_ENV_TERM linux

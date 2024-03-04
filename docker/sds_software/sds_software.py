@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from pwn import *
 import binascii
+import random
 
 context.log_level = 'error'
 
@@ -122,11 +123,16 @@ class SDSSoftware:
             print("VIN Mismatch. Engine fails to start.")
         self.candump_log=old_log
 
-    def main_loop(self):
-        print("SimpleDiagnosticService Software v1.0")
+    def boot_ecm(self):
         self.ecm_proc = remote("192.168.112.3",5000)
         self.ecm_proc.readuntil(b"Starting ECU")
         self.ecm_proc.readline()
+        lcg_state = random.randint(0, (1 << 32) - 1)
+        self.ecm_proc.send(p32(lcg_state,endian='big').ljust(8,b"\x00"))
+
+    def main_loop(self):
+        print("SimpleDiagnosticService Software v1.0")
+        self.boot_ecm()
         while True:
             command = input("> ")
             command = command.strip()
@@ -140,9 +146,7 @@ class SDSSoftware:
                 self.handle_start_engine()
             elif command == "reboot":
                 self.ecm_proc.close()
-                self.ecm_proc = remote("192.168.112.3",5000)
-                self.ecm_proc.readuntil(b"Starting ECU")
-                self.ecm_proc.readline()
+                self.boot_ecm()
                 self.candump_log = ""
             else:
                 print("Invalid command")

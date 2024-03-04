@@ -1,4 +1,4 @@
-version: '3.3'
+version: '3'
 
 networks:
   sds_net:
@@ -15,15 +15,13 @@ services:
     ports:
       - 5000:5000
     privileged: true
-    tty: true
     networks:
-      - sds_net
+      sds_net:
+        ipv4_address: 192.168.112.2
   sds_ecm:
     build: sds_ecm
     privileged: true
-    tty: true
     networks:
-      - sds_net
-    ports:
-      - 5001:5000
+      sds_net:
+        ipv4_address: 192.168.112.3
 

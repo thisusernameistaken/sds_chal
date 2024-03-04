@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from pwn import *
 import binascii
+import random
 
 context.log_level = 'error'
 
@@ -40,7 +41,7 @@ class SDSSoftware:
         if ecu_id.lower() == self.ecm_id:
             self.ecm_proc.send(unhex_data)
             while True:
-                can_resp = self.ecm_proc.readn(8,timeout=1)
+                can_resp = self.ecm_proc.readn(8,timeout=0.2)
                 if can_resp==b"":
                     break
                 byte_string = self.to_byte_string(can_resp)
@@ -122,12 +123,17 @@ class SDSSoftware:
             print("VIN Mismatch. Engine fails to start.")
         self.candump_log=old_log
 
+    def boot_ecm(self):
+        self.ecm_proc = process("./run.sh",shell=True)
+        self.ecm_proc.readuntil(b"Starting ECU")
+        self.ecm_proc.readline()
+        lcg_state = random.randint(0, (1 << 32) - 1)
+        self.ecm_proc.send(p32(lcg_state,endian='big').ljust(8,b"\x00"))
+
     def main_loop(self):
         print("SimpleDiagnosticService Software v1.0")
         context.log_level="debug"
-        self.ecm_proc = remote("127.0.0.1",5001)
-        self.ecm_proc.readuntil(b"Starting ECU")
-        self.ecm_proc.readline()
+        self.boot_ecm()
         while True:
             command = input("> ")
             command = command.strip()
@@ -141,9 +147,7 @@ class SDSSoftware:
                 self.handle_start_engine()
             elif command == "reboot":
                 self.ecm_proc.close()
-                self.ecm_proc = process("./run.sh",shell=True)
-                self.ecm_proc.readuntil(b"Starting ECU")
-                self.ecm_proc.readline()
+                self.boot_ecm()
                 self.candump_log = ""
             else:
                 print("Invalid command")

@@ -3,13 +3,14 @@
 #include "can.h"
 #include "protected.h"
 
+int lcg_state=0;
+
 void handle_can_packet(char* can_pkt){
-    // char response[0x30];
-    // memset(response,0,0x30);
-    // strcpy(response,"Recieved PACKET: ");
-    // strcat(response,can_pkt);
-    // strcat(response,"\n");
-    // uart_write(response);
+    
+    if (lcg_state==0){
+        lcg_state = convert_to_int(can_pkt);
+        return;
+    }
 
     //multi-frame
     if (can_pkt[0] == 0x30){
@@ -205,7 +206,7 @@ void handle_read_did_by_id(char* can_pkt){
         can_send(can_response);
     }
 }
-static unsigned int lcg_state = 0x3BADB015;
+
 char lcg_next(){
     lcg_state = (1664525 * lcg_state + 1013904223) & 0xffffffff;
     return (char)lcg_state;
