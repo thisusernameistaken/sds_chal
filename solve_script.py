@@ -5,8 +5,8 @@ context.arch = "arm"
 
 # io = process(["python3","sds_software.py"],stdin=PIPE,stdout=PIPE)
 
-io = remote("127.0.0.1",5000)
-
+#io = remote("127.0.0.1",5000)
+io = remote("0.tcp.ngrok.io",18084)
 def enter_diagnostic():
     io.sendlineafter(b"> ",b"cansend 7e0#022002")
 

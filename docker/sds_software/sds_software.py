@@ -2,6 +2,7 @@
 from pwn import *
 import binascii
 import random
+import time
 
 context.log_level = 'error'
 
@@ -18,7 +19,7 @@ class SDSSoftware:
             b"RITSEC",   # Brand
             b"2024", #Year
             b"1RITSEC15926Q2025",#VIN
-            b"ritsec{FAKE_FLAG_IN_BCM_TOO}"
+            b"RITCTF{FAKE_FLAG_IN_BCM_TOO}"
         ]
         self.response_template = "can0 {} [8] {}"
         self.candump_log = ""
@@ -40,13 +41,7 @@ class SDSSoftware:
         self.send_to_can(response)
         if ecu_id.lower() == self.ecm_id:
             self.ecm_proc.send(unhex_data)
-            while True:
-                can_resp = self.ecm_proc.readn(8,timeout=0.5)
-                if can_resp==b"":
-                    break
-                byte_string = self.to_byte_string(can_resp)
-                response = self.response_template.format(hex(int(self.ecm_id,16)+8).upper()[2:],byte_string)
-                self.send_to_can(response)
+            self.get_resp()
         if ecu_id.lower() == self.bcm_id:
             if data.startswith("300000"):
                 if self.multiframe_data != "":
@@ -92,10 +87,20 @@ class SDSSoftware:
                         response = self.response_template.format(hex(int(self.bcm_id,16)+8).upper()[2:],byte_string)
                     self.send_to_can(response)
 
+    def get_resp(self):
+        while True:
+                can_resp = self.ecm_proc.readn(8,timeout=0.5)
+                if can_resp==b"":
+                    break
+                byte_string = self.to_byte_string(can_resp)
+                response = self.response_template.format(hex(int(self.ecm_id,16)+8).upper()[2:],byte_string)
+                self.send_to_can(response)
+
     def handle_candump(self,command):
         if command=="candump clear":
             self.candump_log=""
         else:
+            self.get_resp()
             print(self.candump_log)
 
     def to_byte_string(self,s):
@@ -108,6 +113,7 @@ class SDSSoftware:
     def handle_start_engine(self):
         old_log = self.candump_log
         self.handle_cansend("cansend 7e0#022002")
+        self.get_resp()
         self.candump_log=""
         self.handle_cansend("cansend 7e0#022403")
         self.handle_cansend("cansend 7e0#30")
@@ -130,6 +136,18 @@ class SDSSoftware:
         lcg_state = random.randint(0, (1 << 32) - 1)
         self.ecm_proc.send(p32(lcg_state,endian='big').ljust(8,b"\x00"))
 
+    def print_help(self):
+        print("""
+Commands:
+    help: prints this message
+    cansend: send CAN message 
+    candump: read CAN messages from Bus
+    start_engine: run vehicle
+    reboot: reboot ECUs
+    exit: close SDS Software
+Referer to SDS Manual for more information.
+              """)
+
     def main_loop(self):
         print("SimpleDiagnosticService Software v1.0")
         self.boot_ecm()
@@ -137,7 +155,7 @@ class SDSSoftware:
             command = input("> ")
             command = command.strip()
             if command == "help":
-                print("help:...")
+                self.print_help()
             elif command.startswith("cansend "):
                 self.handle_cansend(command)
             elif command.startswith("candump"):
@@ -148,6 +166,8 @@ class SDSSoftware:
                 self.ecm_proc.close()
                 self.boot_ecm()
                 self.candump_log = ""
+            elif command == "exit":
+                exit()
             else:
                 print("Invalid command")
 
